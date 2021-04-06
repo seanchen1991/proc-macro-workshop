@@ -23,12 +23,14 @@
 
 use derive_builder::Builder;
 
-#[derive(Builder)]
+#[derive(Builder)] // Builder is the attribute
 pub struct Command {
     executable: String,
     args: Vec<String>,
     env: Vec<String>,
     current_dir: String,
 }
+
+// 
 
 fn main() {}

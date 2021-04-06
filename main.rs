@@ -6,4 +6,6 @@
 // To run the code:
 //     $ cargo run
 
-fn main() {}
+fn main() {
+
+}
