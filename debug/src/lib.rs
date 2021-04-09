@@ -2,9 +2,22 @@ use quote::quote;
 use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
 
+fn debug_attr(f: &syn::Field) -> Option<&syn::Attribute> {
+    for attr in &f.attrs {
+        if attr.path.segments.len() == 1 && attr.path.segments[0].ident == "debug" {
+            return Some(attr);
+        }
+    }
+
+    None
+}
+
 #[proc_macro_derive(CustomDebug)]
 pub fn derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
+
+    eprintln!("{:#?}", ast);
+
     let ident = &ast.ident;
     let sident = syn::Ident::new(&ident.to_string(), ident.span());
     let fields = if let syn::Data::Struct(syn::DataStruct { fields: syn::Fields::Named(syn::FieldsNamed { ref named, .. }), .. }) = ast.data {
@@ -14,7 +27,7 @@ pub fn derive(input: TokenStream) -> TokenStream {
         unimplemented!();
     };
 
-    let struct_fields = fields.iter().map(|f| {
+    let _struct_fields = fields.iter().map(|f| {
         let name = &f.ident;
         let ty = &f.ty;
         quote! { #name: #ty }
