@@ -1,6 +1,10 @@
-use quote::quote;
 use proc_macro::TokenStream;
-use syn::{parse_macro_input, DeriveInput};
+use quote::{quote, quote_spanned};
+use syn::{
+    spanned::Spanned,
+    parse_macro_input, 
+    DeriveInput
+};
 
 macro_rules! return_compile_error {
     ($e:expr) => {
@@ -9,6 +13,25 @@ macro_rules! return_compile_error {
             Err(err) => return err.to_compile_error().into()
         }
     }
+}
+
+fn handle_field_attr(f: &syn::Field, attr: &syn::Attribute) -> syn::Result<proc_macro2::TokenStream> {
+    let fname = &f.ident;
+    let meta = syn::Attribute::parse_meta(attr)?;
+
+    if let syn::Meta::NameValue(syn::MetaNameValue {
+        path,
+        lit: syn::Lit::Str(lit),
+        ..
+    }) = &meta {
+        if path.is_ident("debug") {
+            return Ok(quote_spanned! {attr.span()=>
+                .field(stringify!(#fname), &format_args!(#lit, &self.#fname))
+            });
+        } 
+    }
+
+    Err(syn::Error::new_spanned(&meta, "expected `debug = \"...\"`"))
 }
 
 #[proc_macro_derive(CustomDebug, attributes(debug))]
@@ -33,17 +56,17 @@ pub fn derive(input: TokenStream) -> TokenStream {
         // if there is exactly one, check if it's the `debug` attr 
         // we care about 
         if f.attrs.len() == 1 {
-            let attr = f.iter().next().unwrap();
+            let attr = f.attrs.iter().next().unwrap();
             handle_field_attr(&f, &attr)
         } else {
-            Ok(quote_spanned! {field.span()=> 
+            Ok(quote_spanned! {f.span()=> 
                 .field(stringify!(#fname), &self.#fname)
             })
         }
-
-        quote! { .field(stringify!(#fname), &self.#fname) }
     })
     .collect();
+
+    let debug_fields = return_compile_error!(debug_fields);
 
     let expanded = quote! {
         impl std::fmt::Debug for #sident {

@@ -17,4 +17,5 @@ trybuild = { version = "1.0", features = ["diff"] }
 
 [dependencies]
 quote = "*"
+proc-macro2 = "*"
 syn = { version = "*", features = ["extra-traits"] }
