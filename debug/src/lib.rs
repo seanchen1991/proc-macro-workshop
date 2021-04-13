@@ -2,15 +2,7 @@ use quote::quote;
 use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
 
-fn debug_attr(f: &syn::Field) -> Option<&syn::Attribute> {
-    for attr in &f.attrs {
-        if attr.path.segments.len() == 1 && attr.path.segments[0].ident == "debug" {
-            return Some(attr);
-        }
-    }
 
-    None
-}
 
 #[proc_macro_derive(CustomDebug)]
 pub fn derive(input: TokenStream) -> TokenStream {
@@ -27,22 +19,12 @@ pub fn derive(input: TokenStream) -> TokenStream {
         unimplemented!();
     };
 
-    let _struct_fields = fields.iter().map(|f| {
-        let name = &f.ident;
-        let ty = &f.ty;
-        quote! { #name: #ty }
-    });
-
     let debug_methods = fields.iter().map(|f| {
         let name = &f.ident;
         quote! { .field(stringify!(#name), &self.#name) }
     });
 
     let expanded = quote! {
-        // pub struct #sident {
-        //     #(#struct_fields,)*
-        // }
-
         impl std::fmt::Debug for #sident {
             fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
                 fmt.debug_struct(stringify!(#sident))
