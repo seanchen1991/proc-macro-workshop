@@ -11,11 +11,11 @@ macro_rules! return_compile_error {
     }
 }
 
-#[proc_macro_derive(CustomDebug)]
+#[proc_macro_derive(CustomDebug, attributes(debug))]
 pub fn derive(input: TokenStream) -> TokenStream {
     let ast = parse_macro_input!(input as DeriveInput);
 
-    eprintln!("{:#?}", ast);
+    // eprintln!("{:#?}", ast);
 
     let ident = &ast.ident;
     let sident = syn::Ident::new(&ident.to_string(), ident.span());
@@ -26,16 +26,30 @@ pub fn derive(input: TokenStream) -> TokenStream {
         unimplemented!();
     };
 
-    let debug_methods = fields.iter().map(|f| {
-        let name = &f.ident;
-        quote! { .field(stringify!(#name), &self.#name) }
-    });
+    let debug_fields: syn::Result<Vec<_>> = fields.iter().map(|f| {
+        let fname = &f.ident;
+        
+        // check the attrs on each field
+        // if there is exactly one, check if it's the `debug` attr 
+        // we care about 
+        if f.attrs.len() == 1 {
+            let attr = f.iter().next().unwrap();
+            handle_field_attr(&f, &attr)
+        } else {
+            Ok(quote_spanned! {field.span()=> 
+                .field(stringify!(#fname), &self.#fname)
+            })
+        }
+
+        quote! { .field(stringify!(#fname), &self.#fname) }
+    })
+    .collect();
 
     let expanded = quote! {
         impl std::fmt::Debug for #sident {
             fn fmt(&self, fmt: &mut std::fmt::Formatter) -> std::fmt::Result {
                 fmt.debug_struct(stringify!(#sident))
-                #(#debug_methods)*
+                #(#debug_fields)*
                 .finish()
             }        
         }
