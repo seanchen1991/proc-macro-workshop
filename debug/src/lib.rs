@@ -2,7 +2,14 @@ use quote::quote;
 use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
 
-
+macro_rules! return_compile_error {
+    ($e:expr) => {
+        match $e {
+            Ok(val) => val,
+            Err(err) => return err.to_compile_error().into()
+        }
+    }
+}
 
 #[proc_macro_derive(CustomDebug)]
 pub fn derive(input: TokenStream) -> TokenStream {
